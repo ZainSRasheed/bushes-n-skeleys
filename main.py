@@ -1,0 +1,304 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Aug  2 10:04:06 2023
+
+@author: 1
+"""
+
+import pygame as pg
+import sys
+
+# Initialize Pygame
+pg.init()
+
+# Music
+# Starting the mixer
+pg.mixer.init()
+# Loading the song
+pg.mixer.music.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\song.mp3')
+# Setting the volume
+pg.mixer.music.set_volume(0.7)
+# Start playing the song
+pg.mixer.music.play(-1)
+
+# Constants
+TILE_SIZE = 32
+PLAYER_SIZE = 24
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 640
+WHITE = (255,255,255)
+BLACK = (0,0,0)
+
+# Clock
+clock = pg.time.Clock()
+half_second_interval = 500
+start_time = pg.time.get_ticks()
+
+# Player Sprites
+PLAYER_SPRITE_RIGHT = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Player Sprite Right.png')
+PLAYER_SPRITE_RIGHT_BOB = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Player Sprite Right Bob.png')
+PLAYER_SPRITE_LEFT = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Player Sprite Left.png')
+PLAYER_SPRITE_LEFT_BOB = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Player Sprite Left Bob.png')
+
+# Skeleton Sprites
+SKELETON_SPRITE_RIGHT = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Skeleton Sprite Right.png')
+SKELETON_SPRITE_RIGHT_HIT = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Skeleton Sprite Right Hit.png')
+SKELETON_SPRITE_LEFT = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Skeleton Sprite Left.png')
+SKELETON_SPRITE_LEFT_HIT = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Skeleton Sprite Left Hit.png')
+skeleton_status = SKELETON_SPRITE_RIGHT
+
+# Blocks
+ORANGE_BLOCK = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Orange Block.png')
+EMPTY_BLOCK = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Empty Block.png')
+CLIFF_BLOCK = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Cliff Block.png')
+BUSH_BLOCK = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Bush Block.png')
+DEAD_BUSH_BLOCK = pg.image.load(r'C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\Dead Bush Block.png')
+
+# Block dictionaries
+BASE_DICT = {
+    ' ':EMPTY_BLOCK,
+    }
+OBJECT_DICT = {
+    'x':ORANGE_BLOCK,
+    'c':CLIFF_BLOCK,
+    'b':BUSH_BLOCK,
+    'd':DEAD_BUSH_BLOCK,
+    'p':PLAYER_SPRITE_RIGHT,
+    }
+
+# Variables
+x_pos = 0
+y_pos = 0
+player_bob_tick = 0
+player_sprite_status = 'right'
+player_speed = 2
+
+# Create the display surface
+screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pg.display.set_caption("3D Cube Viewer with Python")
+
+MAP_BASE = [
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+]
+
+OBJECTS = [
+    ['x','c','c','c','c','c','c','c','c','x','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','x'],
+    ['x',' ',' ',' ',' ',' ',' ',' ',' ','c','x',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x',' ',' ',' '],
+    ['x',' ','c',' ',' ','x',' ','x',' ',' ','c',' ','x',' ',' ',' ',' ','d',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x',' ','c','x'],
+    ['x',' ','d','x','x','x',' ','x',' ',' ',' ',' ','c',' ','x','c','c','b',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x',' ',' ','x'],
+    ['x',' ',' ','c','c','c','c','c',' ',' ','x',' ','b',' ','c',' ',' ','b',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x','c',' ','x'],
+    ['x',' ','x',' ','b',' ',' ',' ','c','c','c',' ','c',' ',' ',' ',' ','d',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x',' ',' ','x'],
+    ['x',' ','x',' ',' ',' ','x',' ',' ',' ','x',' ',' ','b','b','b',' ','d',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x',' ','c','x'],
+    ['x',' ',' ',' ',' ',' ','c','x','b',' ','x','x',' ',' ',' ','b',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','x',' ',' ','x'],
+    ['x',' ','d',' ',' ',' ',' ','x',' ',' ','c','x','c','x',' ','b',' ','c','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','c',' ','x','c',' ','x'],
+    ['x',' ','c',' ',' ',' ',' ','x',' ','x',' ','x',' ','c',' ','b',' ',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ',' ','x'],
+    ['x',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','c',' ',' ',' ','b','b',' ','x','c','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','c','x'],
+    ['x',' ','d',' ',' ',' ',' ',' ',' ','c',' ',' ','b',' ',' ',' ',' ',' ','x','d','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ',' ','x'],
+    ['x',' ','x','b',' ',' ',' ',' ','p',' ','x',' ','b',' ','x',' ','d',' ','x',' ','x','c','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x','c',' ','x'],
+    ['x',' ','x',' ',' ','b',' ',' ',' ','x','x',' ','x','c','x',' ','d',' ','x',' ','x',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ',' ','x'],
+    ['x',' ','x',' ',' ',' ',' ',' ',' ','x','x',' ','c',' ','c',' ',' ',' ','d',' ','x',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ','c','x'],
+    ['x',' ','x',' ',' ',' ',' ','c','c','c','x',' ',' ',' ','b',' ',' ',' ','x',' ','x',' ','c',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x',' ',' ','x'],
+    ['x',' ','x','b',' ','b',' ',' ',' ',' ','x',' ',' ',' ',' ','x','b',' ','x',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x','x',' ','x'],
+    ['x',' ','c','c',' ',' ','c','c','c','c','c',' ',' ',' ','c','c','c','c','c',' ','x',' ',' ',' ',' ',' ',' ',' ',' ',' ','x','c','c','c',' ',' ','c','c',' ','x'],
+    ['x',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','x','x',' ',' ',' ',' ',' ',' ',' ',' ','x',' ',' ',' ',' ',' ',' ',' ',' ','x'],
+    ['c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','c','x'],
+]
+
+ENEMIES = [
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ','s','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ','s',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ','s',' ',' ',' ',' ','s',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ','s',' ',' ',' ',' ',' ','s','s','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ','s',' ',' ',' ',' ',' ',' ','s',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ','s','s','s','s','s','s','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ','s','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ','s','s',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ','s','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ','s',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ','s',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s','s','s',' ',' ',' ',' ',' ',' ','s','s',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ','s',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','s',' ',' ','s','s',' ',' ',' ',' ',' ',' ',' ','s',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+]
+
+# Draw Map Base Layer
+def create_map():
+    for row_index, row in enumerate(MAP_BASE):
+        for col_index, element in enumerate(row):
+            screen.blit(BASE_DICT[element], (col_index*TILE_SIZE-x_pos+SCREEN_WIDTH//2,row_index*TILE_SIZE-y_pos+SCREEN_HEIGHT//2))
+# Draw Objects        
+def create_map_objects():
+    for row_index, row in enumerate(OBJECTS):
+        for col_index, element in enumerate(row):
+            if element != ' ' and element != 'p':
+                screen.blit(OBJECT_DICT[element], (col_index*TILE_SIZE-x_pos+SCREEN_WIDTH//2,row_index*TILE_SIZE-y_pos+SCREEN_HEIGHT//2))
+
+# Draw Enemies
+def create_enemies_list():
+    enemies = []
+    for row_index, row in enumerate(ENEMIES):
+        for col_index, element in enumerate(row):
+            if element == 's':
+                enemies.append([col_index*TILE_SIZE,row_index*TILE_SIZE])
+    return enemies
+
+enemy_walk = 0     
+player_health = 300      
+def draw_enemies(player_health):
+    for element in create_enemies_list():
+        enemy_pos_x = -x_pos+SCREEN_WIDTH//2+element[0]+enemy_walk
+        enemy_pos_y = -y_pos+SCREEN_HEIGHT//2+element[1]
+        # test enemy hit
+        if (enemy_pos_x - 20 < SCREEN_WIDTH//2 < enemy_pos_x + 20) and (enemy_pos_y-20 < SCREEN_HEIGHT//2 < enemy_pos_y +20):
+            if enemy_facing == 'right':
+                screen.blit(SKELETON_SPRITE_RIGHT_HIT, (-x_pos+SCREEN_WIDTH//2+element[0]+enemy_walk,-y_pos+SCREEN_HEIGHT//2+element[1]))
+            if enemy_facing == 'left':
+                screen.blit(SKELETON_SPRITE_LEFT_HIT, (-x_pos+SCREEN_WIDTH//2+element[0]+enemy_walk,-y_pos+SCREEN_HEIGHT//2+element[1]))
+            player_health -= 1
+            hurt_sound = pg.mixer.Sound(r"C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\hurt_sound.mp3")
+            hurt_sound.play()
+        # enemy not touching player
+        else:    
+            screen.blit(skeleton_status, (enemy_pos_x,enemy_pos_y))
+    return player_health
+                  
+# Place player sprite
+def player_start_pos():
+    for row_index, row in enumerate(OBJECTS):
+        for col_index, element in enumerate(row):
+            if element == 'p':
+                x_pos = col_index*TILE_SIZE
+                y_pos = row_index*TILE_SIZE
+    return x_pos, y_pos
+
+# Player sprite movement
+def player(x_pos,y_pos,player_sprite_status):
+    keys = pg.key.get_pressed()
+    if keys[pg.K_a]:
+        x_pos -= player_speed
+        player_sprite_status = 'left'
+    if keys[pg.K_d]:
+        x_pos += player_speed
+        player_sprite_status = 'right'
+    if keys[pg.K_w]:
+        y_pos -= player_speed
+    if keys[pg.K_s]:
+        y_pos += player_speed
+    if player_sprite_status == 'right':
+        if (player_bob_tick % 2) == 0:
+            screen.blit(PLAYER_SPRITE_RIGHT, (SCREEN_WIDTH//2,SCREEN_HEIGHT//2))
+        else:
+            screen.blit(PLAYER_SPRITE_RIGHT_BOB, (SCREEN_WIDTH//2,SCREEN_HEIGHT//2))
+    if player_sprite_status == 'left':
+        if (player_bob_tick % 2) == 0:
+            screen.blit(PLAYER_SPRITE_LEFT, (SCREEN_WIDTH//2,SCREEN_HEIGHT//2))
+        else:
+            screen.blit(PLAYER_SPRITE_LEFT_BOB, (SCREEN_WIDTH//2,SCREEN_HEIGHT//2))
+        
+    return x_pos, y_pos
+
+def collision(x_pos,y_pos):
+    for row_index, row in enumerate(OBJECTS):
+        for col_index, element in enumerate(row):
+            if element in OBJECT_DICT:
+                if element != 'p':
+                    # Check right collision
+                    if col_index*TILE_SIZE-PLAYER_SIZE < x_pos//1 < col_index*TILE_SIZE-PLAYER_SIZE+(TILE_SIZE/2): # if right of sprite is touching the same column
+                        if row_index*TILE_SIZE-PLAYER_SIZE+12-TILE_SIZE//2.5 < y_pos < row_index*TILE_SIZE+PLAYER_SIZE-12: # if right of sprite is touching the same row
+                            x_pos = col_index*TILE_SIZE-PLAYER_SIZE-.0001
+                            
+                    # Check left collision
+                    if col_index*TILE_SIZE+TILE_SIZE-(TILE_SIZE/2) < x_pos//1 < col_index*TILE_SIZE+TILE_SIZE: # if left of sprite is touching the same column
+                        if row_index*TILE_SIZE-PLAYER_SIZE+5 < y_pos < row_index*TILE_SIZE+TILE_SIZE-5-TILE_SIZE//2.5: #if left of sprite is touching the same row
+                            x_pos = col_index*TILE_SIZE+TILE_SIZE
+                            
+                    # Check up collision
+                    if row_index*TILE_SIZE+TILE_SIZE-(TILE_SIZE/2) < y_pos//1 < row_index*TILE_SIZE+TILE_SIZE-TILE_SIZE//2.5: # if top of sprite is touching the same row
+                        if col_index*TILE_SIZE-PLAYER_SIZE+5 < x_pos < col_index*TILE_SIZE+TILE_SIZE-5: #if top of sprite is touching the same column
+                            y_pos = row_index*TILE_SIZE+TILE_SIZE-TILE_SIZE//2.5
+                    
+                    # Check down collision
+                    if row_index*TILE_SIZE-PLAYER_SIZE < y_pos//1 < row_index*TILE_SIZE-PLAYER_SIZE+(TILE_SIZE/2): # if bottom of sprite is touching the same row
+                        if col_index*TILE_SIZE-PLAYER_SIZE+5 < x_pos < col_index*TILE_SIZE+TILE_SIZE-5: #if bottom of sprite is touching the same column
+                            y_pos = row_index*TILE_SIZE-PLAYER_SIZE -.0001     
+    return(x_pos,y_pos)
+                
+x_pos, y_pos = player_start_pos()
+True
+# Main game loop
+while True:
+    # Clock
+    current_time = pg.time.get_ticks()  
+    
+    # Check if half second has passed
+    if current_time - start_time >= half_second_interval:
+        start_time = current_time  # Reset the start time for the next half second
+        player_bob_tick +=1
+    # Fill the screen with black
+    screen.fill(BLACK)
+    
+    # Check for quit
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            pg.quit()
+            sys.exit()
+            
+    create_map()
+    create_map_objects()
+    x_pos,y_pos = collision(x_pos,y_pos)
+    x_pos, y_pos = player(x_pos,y_pos,player_sprite_status = 'right')
+    
+    # enemy movement
+    if enemy_walk == 0:
+        enemy_facing = 'right'
+    if enemy_walk == 100:
+        enemy_facing = 'left'
+    if enemy_facing == 'right':
+        enemy_walk += .5
+        skeleton_status = SKELETON_SPRITE_RIGHT
+    if enemy_facing == 'left':
+        enemy_walk -= .5
+        skeleton_status = SKELETON_SPRITE_LEFT
+
+    # Draw, check if hitting player, take damage
+    player_health = draw_enemies(player_health)
+    health_bar = (10,10),((player_health*10),10)
+    pg.draw.rect((screen), (255, 0, 0), (health_bar))
+    
+    # Player Death
+    if player_health <= 0:
+        screen.fill(BLACK)
+        font = pg.font.SysFont('chalkduster.ttf', 30)
+        win_txt = font.render('GAME OVER', True, WHITE)
+        screen.blit(win_txt, (SCREEN_WIDTH//2.5, SCREEN_HEIGHT//2.5))
+        # Death Sound
+        death_sound = pg.mixer.Sound(r"C:\Users\1\OneDrive\Desktop\Python Stuff\2D Game\death_sound.mp3")
+        pg.mixer.music.stop()
+        death_sound.play(1)
+    # Update the display
+    pg.display.flip()
